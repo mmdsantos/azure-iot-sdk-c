@@ -49,7 +49,6 @@ void real_free(void* ptr)
 #include "azure_uamqp_c/message_receiver.h"
 #include "iothub_client_private.h"
 #include "iothub_client_version.h"
-#include "iothub_message.h"
 #include "uamqp_messaging.h"
 
 #undef ENABLE_MOCKS
@@ -702,9 +701,9 @@ static void set_expected_calls_for_messenger_send_async()
 }
 
 static IOTHUB_MESSAGE_LIST* TEST_on_event_send_complete_message;
-static EVENT_SEND_COMPLETE_RESULT TEST_on_event_send_complete_result;
+static MESSENGER_EVENT_SEND_COMPLETE_RESULT TEST_on_event_send_complete_result;
 static void* TEST_on_event_send_complete_context;
-static void TEST_on_event_send_complete(IOTHUB_MESSAGE_LIST* message, EVENT_SEND_COMPLETE_RESULT result, void* context)
+static void TEST_on_event_send_complete(IOTHUB_MESSAGE_LIST* message, MESSENGER_EVENT_SEND_COMPLETE_RESULT result, void* context)
 {
 	TEST_on_event_send_complete_message = message;
 	TEST_on_event_send_complete_result = result;
@@ -1203,7 +1202,7 @@ TEST_FUNCTION_INITIALIZE(TestMethodInitialize)
     TEST_link_set_attach_properties_result = 0;
 
 	TEST_on_event_send_complete_message = NULL;
-	TEST_on_event_send_complete_result = EVENT_SEND_COMPLETE_RESULT_OK;
+	TEST_on_event_send_complete_result = MESSENGER_EVENT_SEND_COMPLETE_RESULT_OK;
 	TEST_on_event_send_complete_context = NULL;
 }
 
@@ -1548,7 +1547,7 @@ TEST_FUNCTION(messenger_destroy_NULL_handle)
 // Tests_SRS_IOTHUBTRANSPORT_AMQP_MESSENGER_09_162: [If `instance->state` is MESSENGER_STATE_STOPPING, messenger_do_work() shall move all items from `instance->in_progress_list` to the beginning of `instance->wait_to_send_list`]  
 // Tests_SRS_IOTHUBTRANSPORT_AMQP_MESSENGER_09_164: [If all items get successfuly moved back to `instance->wait_to_send_list`, `instance->state` shall be set to MESSENGER_STATE_STOPPED, and `instance->on_state_changed_callback` invoked]
 // Tests_SRS_IOTHUBTRANSPORT_AMQP_MESSENGER_09_110: [If the `instance->state` is not MESSENGER_STATE_STOPPED, messenger_destroy() shall invoke messenger_stop() and messenger_do_work() once]  
-// Tests_SRS_IOTHUBTRANSPORT_AMQP_MESSENGER_09_111: [All elements of `instance->in_progress_list` and `instance->wait_to_send_list` shall be removed, invoking `task->on_event_send_complete_callback` for each with EVENT_SEND_COMPLETE_RESULT_MESSENGER_DESTROYED]  
+// Tests_SRS_IOTHUBTRANSPORT_AMQP_MESSENGER_09_111: [All elements of `instance->in_progress_list` and `instance->wait_to_send_list` shall be removed, invoking `task->on_event_send_complete_callback` for each with MESSENGER_EVENT_SEND_COMPLETE_RESULT_MESSENGER_DESTROYED]  
 // Tests_SRS_IOTHUBTRANSPORT_AMQP_MESSENGER_09_150: [`instance->in_progress_list` and `instance->wait_to_send_list` shall be destroyed using singlylinkedlist_destroy()]  
 // Tests_SRS_IOTHUBTRANSPORT_AMQP_MESSENGER_09_112: [`instance->iothub_host_fqdn` shall be destroyed using STRING_delete()]  
 // Tests_SRS_IOTHUBTRANSPORT_AMQP_MESSENGER_09_113: [`instance->device_id` shall be destroyed using STRING_delete()]  
@@ -1911,7 +1910,7 @@ TEST_FUNCTION(messenger_do_work_on_event_send_complete_OK)
     // assert
 	ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 	ASSERT_ARE_EQUAL(void_ptr, TEST_IOTHUB_MESSAGE_LIST_HANDLE, TEST_on_event_send_complete_message);
-	ASSERT_ARE_EQUAL(int, EVENT_SEND_COMPLETE_RESULT_OK, TEST_on_event_send_complete_result);
+	ASSERT_ARE_EQUAL(int, MESSENGER_EVENT_SEND_COMPLETE_RESULT_OK, TEST_on_event_send_complete_result);
 	ASSERT_ARE_EQUAL(void_ptr, TEST_IOTHUB_CLIENT_HANDLE, TEST_on_event_send_complete_context);
 
     // cleanup
@@ -1943,7 +1942,7 @@ TEST_FUNCTION(messenger_do_work_on_event_send_complete_ERROR)
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 	ASSERT_ARE_EQUAL(void_ptr, TEST_IOTHUB_MESSAGE_LIST_HANDLE, TEST_on_event_send_complete_message);
-	ASSERT_ARE_EQUAL(int, EVENT_SEND_COMPLETE_RESULT_ERROR_FAIL_SENDING, TEST_on_event_send_complete_result);
+	ASSERT_ARE_EQUAL(int, MESSENGER_EVENT_SEND_COMPLETE_RESULT_ERROR_FAIL_SENDING, TEST_on_event_send_complete_result);
     ASSERT_ARE_EQUAL(void_ptr, TEST_IOTHUB_CLIENT_HANDLE, TEST_on_event_send_complete_context);
 
     // cleanup
@@ -1983,7 +1982,7 @@ TEST_FUNCTION(messenger_do_work_send_events_message_create_from_iothub_message_f
     // assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 	ASSERT_ARE_EQUAL(void_ptr, TEST_IOTHUB_MESSAGE_LIST_HANDLE, TEST_on_event_send_complete_message);
-	ASSERT_ARE_EQUAL(int, EVENT_SEND_COMPLETE_RESULT_ERROR_CANNOT_PARSE, TEST_on_event_send_complete_result);
+	ASSERT_ARE_EQUAL(int, MESSENGER_EVENT_SEND_COMPLETE_RESULT_ERROR_CANNOT_PARSE, TEST_on_event_send_complete_result);
 	ASSERT_ARE_EQUAL(void_ptr, TEST_IOTHUB_CLIENT_HANDLE, TEST_on_event_send_complete_context);
 
     // cleanup
@@ -2030,7 +2029,7 @@ TEST_FUNCTION(messenger_do_work_send_events_messagesender_send_fails)
 
         // assert
         ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-		ASSERT_ARE_EQUAL(int, EVENT_SEND_COMPLETE_RESULT_ERROR_FAIL_SENDING, TEST_on_event_send_complete_result);
+		ASSERT_ARE_EQUAL(int, MESSENGER_EVENT_SEND_COMPLETE_RESULT_ERROR_FAIL_SENDING, TEST_on_event_send_complete_result);
 
         if (i < (DEFAULT_EVENT_SEND_RETRY_LIMIT - 1))
         {

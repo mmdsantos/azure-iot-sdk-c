@@ -80,13 +80,14 @@ extern "C"
 #include "azure_uamqp_c/sasl_mssbcbs.h"
 #include "azure_uamqp_c/saslclientio.h"
 
-#include "uamqp_messaging.h"
 #include "iothub_client_ll.h"
 #include "iothub_client_options.h"
 #include "iothub_client_private.h"
-#include "iothubtransportamqp_auth.h"
 #include "iothubtransportamqp_methods.h"
 #include "iothub_client_version.h"
+#include "iothubtransport_amqp_connection.h"
+#include "iothubtransport_amqp_cbs_auth.h"
+#include "iothubtransport_amqp_messenger.h"
 #undef ENABLE_MOCKS
 
 #include "iothubtransport_amqp_common.h"
@@ -254,7 +255,6 @@ static TEST_MUTEX_HANDLE g_dllByDll;
 static const unsigned char* TEST_DEVICE_METHOD_RESPONSE = (const unsigned char*)0x62;
 static size_t TEST_DEVICE_RESP_LENGTH = 1;
 
-AMQP_TRANSPORT_CREDENTIAL test_transport_credential;
 static const IOTHUB_CLIENT_LL_HANDLE TEST_IOTHUB_CLIENT_LL_HANDLE = (IOTHUB_CLIENT_LL_HANDLE)0x4343;
 
 const TRANSPORT_PROVIDER* TEST_get_iothub_client_transport_provider(void)
@@ -308,7 +308,6 @@ BEGIN_TEST_SUITE(iothubtransport_amqp_common_ut)
 
 TEST_SUITE_INITIALIZE(TestClassInitialize)
 {
-    AMQP_TRANSPORT_CREDENTIAL* test_transport_credential_ptr = &test_transport_credential;
     TEST_INITIALIZE_MEMORY_DEBUG(g_dllByDll);
     g_testByTest = TEST_MUTEX_CREATE();
     ASSERT_IS_NOT_NULL(g_testByTest);
@@ -321,9 +320,6 @@ TEST_SUITE_INITIALIZE(TestClassInitialize)
     ASSERT_ARE_EQUAL(int, 0, result);
     result = umocktypes_bool_register_types();
     ASSERT_ARE_EQUAL(int, 0, result);
-
-    /* test by default with X509 as it is simpler */
-    test_transport_credential.type = X509;
 
     REGISTER_UMOCK_ALIAS_TYPE(IOTHUB_MESSAGE_HANDLE, void*);
     REGISTER_UMOCK_ALIAS_TYPE(IOTHUBMESSAGE_CONTENT_TYPE, int);
@@ -373,8 +369,6 @@ TEST_SUITE_INITIALIZE(TestClassInitialize)
     REGISTER_GLOBAL_MOCK_HOOK(iothubtransportamqp_methods_subscribe, my_iothubtransportamqp_methods_subscribe);
 #endif
     
-    REGISTER_GLOBAL_MOCK_RETURN(authentication_create, TEST_AUTHENTICATION_STATE_HANDLE);
-    REGISTER_GLOBAL_MOCK_RETURN(authentication_get_credential, test_transport_credential_ptr);
 #ifdef WIP_C2D_METHODS_AMQP /* This feature is WIP, do not use yet */
     REGISTER_GLOBAL_MOCK_RETURN(iothubtransportamqp_methods_create, TEST_IOTHUBTRANSPORTAMQP_METHODS);
 #endif
@@ -385,7 +379,6 @@ TEST_SUITE_INITIALIZE(TestClassInitialize)
     REGISTER_GLOBAL_MOCK_RETURN(saslmechanism_create, TEST_SASL_MECHANISM);
     REGISTER_GLOBAL_MOCK_RETURN(connection_create2, TEST_CONNECTION_HANDLE);
     REGISTER_GLOBAL_MOCK_RETURN(cbs_create, TEST_CBS_HANDLE);
-    REGISTER_GLOBAL_MOCK_RETURN(authentication_get_status, AUTHENTICATION_STATUS_OK);
     REGISTER_GLOBAL_MOCK_RETURN(messaging_create_source, TEST_MESSAGING_SOURCE);
     REGISTER_GLOBAL_MOCK_RETURN(messaging_create_target, TEST_MESSAGING_TARGET);
     REGISTER_GLOBAL_MOCK_RETURN(BUFFER_new, TEST_BUFFER_HANDLE);
@@ -394,14 +387,6 @@ TEST_SUITE_INITIALIZE(TestClassInitialize)
     REGISTER_GLOBAL_MOCK_RETURN(amqpvalue_create_symbol, TEST_AMQP_VALUE);
     REGISTER_GLOBAL_MOCK_RETURN(amqpvalue_create_string, TEST_AMQP_VALUE);
     REGISTER_GLOBAL_MOCK_RETURN(messagesender_create, TEST_MESSAGE_SENDER);
-
-    REGISTER_GLOBAL_MOCK_HOOK(VECTOR_create, my_VECTOR_create);
-    REGISTER_GLOBAL_MOCK_HOOK(VECTOR_destroy, my_VECTOR_destroy);
-    REGISTER_GLOBAL_MOCK_HOOK(VECTOR_push_back, my_VECTOR_push_back);
-    REGISTER_GLOBAL_MOCK_HOOK(VECTOR_element, my_VECTOR_element);
-    REGISTER_GLOBAL_MOCK_HOOK(VECTOR_size, my_VECTOR_size);
-    REGISTER_GLOBAL_MOCK_HOOK(VECTOR_find_if, my_VECTOR_find_if);
-    REGISTER_GLOBAL_MOCK_HOOK(VECTOR_erase, my_VECTOR_erase);
 
     REGISTER_GLOBAL_MOCK_HOOK(STRING_construct, my_STRING_construct);
     REGISTER_GLOBAL_MOCK_HOOK(STRING_delete, my_STRING_delete);
